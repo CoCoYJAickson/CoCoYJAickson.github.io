@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雅思核心词缀互动学习应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: A single-page app with a primary sidebar navigation for selecting content modules (5 prefix groups, 1 suffix section). The main content area uses a tabbed interface to switch between a 'Learn' view (with concept/vocabulary cards) and a 'Practice' view (an interactive quiz). This structure separates learning modes, offers non-linear access to content, and uses an interactive quiz to enhance engagement and knowledge retention, making it superior to a static document for educational purposes. -->
+    <!-- Visualization & Content Choices:
+    * Report Info: Prefix/Suffix Groups -> Goal: Organize/Navigate -> Method: Sidebar Menu -> Interaction: Click to show content -> Justification: Clear, organized access to modules.
+    * Report Info: Concept Explanations & Vocabulary -> Goal: Inform -> Method: Styled HTML/CSS cards -> Interaction: Subtle hover effects -> Justification: Breaks info into digestible chunks.
+    * Report Info: Multiple Choice Questions -> Goal: Test & Reinforce -> Method: Interactive Quiz Interface -> Interaction: Click options for instant feedback, progress tracking, final score, and retry option -> Justification: Active learning is more effective than passive reading. Library/Method: Vanilla JS for quiz logic and DOM manipulation. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .sidebar-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .sidebar-link.active {
+            background-color: #0d9488; /* teal-600 */
+            color: white;
+            font-weight: 600;
+        }
+        .sidebar-link:not(.active):hover {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #0f766e; /* teal-700 */
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid #0d9488;
+            color: #0d9488;
+            font-weight: 600;
+        }
+        .quiz-option-btn {
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #cbd5e1; /* slate-300 */
+        }
+        .quiz-option-btn:hover:not(:disabled) {
+            background-color: #f1f5f9; /* slate-100 */
+            border-color: #0d9488; /* teal-600 */
+        }
+        .quiz-option-btn.correct {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+            color: #166534; /* green-800 */
+        }
+        .quiz-option-btn.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            color: #991b1b; /* red-800 */
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div id="app" class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-white shadow-lg p-4 fixed lg:relative h-full z-20 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+            <h1 class="text-2xl font-bold text-teal-700 mb-6">雅思词缀学习</h1>
+            <nav id="nav-menu" class="space-y-2">
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">核心前缀</h2>
+                    <a href="#prefix-group1" class="sidebar-link block p-2 rounded-lg">第一组: sub, re, over</a>
+                    <a href="#prefix-group2" class="sidebar-link block p-2 rounded-lg">第二组: co, mis, un</a>
+                    <a href="#prefix-group3" class="sidebar-link block p-2 rounded-lg">第三组: pre, trans, dis</a>
+                    <a href="#prefix-group4" class="sidebar-link block p-2 rounded-lg">第四组: in, ex, inter</a>
+                    <a href="#prefix-group5" class="sidebar-link block p-2 rounded-lg">第五组: multi, post, anti</a>
+                </div>
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-6 mb-2">核心后缀</h2>
+                    <a href="#suffix-group" class="sidebar-link block p-2 rounded-lg">形容词 & 名词后缀</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Mobile Menu Button -->
+        <button id="menu-toggle" class="lg:hidden fixed top-4 left-4 z-30 bg-white p-2 rounded-md shadow-md">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+        </button>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+            <div id="content-area" class="max-w-4xl mx-auto">
+                <!-- Content will be dynamically inserted here -->
+            </div>
+        </main>
+    </div>
+
+<script>
+const data = {
+    'prefix-group1': {
+        title: '第一组: sub-, re-, over-',
+        intro: '本节将学习与“位置”、“重复”及“程度”相关的前缀：sub-, re-, 和 over-。通过学习和练习，您将掌握这些前缀的基本用法，从而在遇到相关词汇时能更快地理解其深层含义。',
+        learn: [
+            { term: 'sub-', definition: '意为“在...下面”(under, below)，或“次级的、副的”(secondary)。', examples: ['subway (地铁)', 'submarine (潜水艇)', 'subtitle (副标题)', 'substandard (不合标准的)'] },
+            { term: 're-', definition: '意为“再次、重新”(again)，或“向后”(back)。', examples: ['review (复习)', 'rebuild (重建)', 'recycle (回收)', 'return (返回)'] },
+            { term: 'over-', definition: '意为“过度、过多”(too much)，或“在...之上”(above)。', examples: ['overwork (工作过度)', 'overestimate (高估)', 'overlook (俯瞰)', 'overweight (超重的)'] }
+        ],
+        practice: [
+            { q: "The city decided to ______ the old library instead of knocking it down.", o: ["overlook", "rebuild", "submerge"], a: 1 },
+            { q: "If you ______ your abilities, you might fail the task.", o: ["review", "overestimate", "subtitle"], a: 1 },
+            { q: "Many countries are trying to ______ plastic waste.", o: ["recycle", "overwork", "subvert"], a: 0 },
+            { q: "The quality of the product was ______, so we returned it.", o: ["overweight", "substandard", "reviewed"], a: 1 },
+            { q: "From the top of the hill, you can ______ the entire valley.", o: ["overlook", "rebuild", "return"], a: 0 },
+            { q: "He felt exhausted after weeks of ______.", o: ["subtitle", "review", "overwork"], a: 2 },
+            { q: "The film was in French, so I had to read the English ______.", o: ["subtitles", "returns", "submarines"], a: 0 },
+            { q: "It's important to ______ your notes before an exam.", o: ["rebuild", "review", "overlook"], a: 1 },
+            { q: "A ______ can travel deep beneath the surface of the ocean.", o: ["subway", "submarine", "subtitle"], a: 1 },
+            { q: "Don't ______ the complexity of the problem.", o: ["return", "overestimate", "recycle"], a: 1 },
+            { q: "Being constantly ______ can lead to serious health issues.", o: ["rebuilt", "reviewed", "overworked"], a: 2 },
+            { q: "The fastest way to get around the city is by ______.", o: ["subway", "submarine", "subtitle"], a: 0 },
+            { q: "The company had to ______ its safety procedures after the accident.", o: ["overlook", "review", "overwork"], a: 1 },
+            { q: "Many people who are ______ try to lose weight through diet and exercise.", o: ["substandard", "overweight", "recycled"], a: 1 },
+            { q: "She had to ______ to the store because she forgot her wallet.", o: ["return", "rebuild", "submerge"], a: 0 },
+            { q: "The initial budget was a huge ______ of the actual cost.", o: ["recycle", "overestimation", "review"], a: 1 },
+            { q: "The construction of the new ______ line will take two years.", o: ["submarine", "subway", "subtitle"], a: 1 },
+            { q: "The bridge was damaged in the earthquake and needs to be ______.", o: ["overlooked", "rebuilt", "returned"], a: 1 },
+            { q: "His performance was ______ and did not meet the team's expectations.", o: ["substandard", "overweight", "recycled"], a: 0 },
+            { q: "I think we ______ his contribution to the project; he did more than we thought.", o: ["returned", "overlooked", "rebuilt"], a: 1 },
+            { q: "The government plans to ______ the entire tax system.", o: ["reform", "subform", "overform"], a: 0 },
+            { q: "Be careful not to ______ the pot; the water will spill.", o: ["subfill", "refill", "overfill"], a: 2 },
+            { q: "The land was ______ after the flood.", o: ["submerged", "reworked", "overlooked"], a: 0 },
+            { q: "He had to ______ the story multiple times to make it believable.", o: ["rewrite", "overwrite", "subwrite"], a: 0 },
+            { q: "The doctor warned him about the dangers of being severely ______.", o: ["substandard", "overweight", "returned"], a: 1 },
+            { q: "The company decided to ______ its old logo with a new design.", o: ["replace", "subplace", "overplace"], a: 0 },
+            { q: "The project was delayed due to ______ costs.", o: ["sub-budget", "re-budget", "over-budget"], a: 2 },
+            { q: "We need to ______ the data to ensure it is accurate.", o: ["recheck", "subcheck", "overcheck"], a: 0 },
+            { q: "The army launched a ______ attack from under the water.", o: ["return", "submarine", "rebuild"], a: 1 },
+            { q: "Don't ______ your own importance in this team.", o: ["subestimate", "re-estimate", "overestimate"], a: 2 }
+        ]
+    },
+    'prefix-group2': {
+        title: '第二组: co-, mis-, un-',
+        intro: '本节重点介绍表示“共同”、“错误”和“否定”的前缀：co-, mis-, 和 un-。这些前缀在日常和学术英语中极为常见，掌握它们能有效帮助你解析词义和扩大词汇量。',
+        learn: [
+            { term: 'co- / com- / con-', definition: '意为“共同、一起”(together, with)。', examples: ['cooperate (合作)', 'coworker (同事)', 'coexist (共存)', 'co-pilot (副驾驶)'] },
+            { term: 'mis-', definition: '意为“错误地、坏地”(wrongly, badly)。', examples: ['misunderstand (误解)', 'misfortune (不幸)', 'mislead (误导)', 'misspell (拼写错误)'] },
+            { term: 'un-', definition: '意为“不、无、非”(not)，或表示“反向动作”(reversal of an action)。', examples: ['unable (不能的)', 'unhappy (不开心的)', 'unemployment (失业)', 'unlock (开锁)'] }
+        ],
+        practice: [
+            { q: "It's easy to ______ a word if you're not careful.", o: ["cooperate", "misspell", "unlock"], a: 1 },
+            { q: "He was ______ to attend the meeting due to a prior commitment.", o: ["unhappy", "unable", "coexist"], a: 1 },
+            { q: "The two companies decided to ______ on the new project.", o: ["misunderstand", "cooperate", "mislead"], a: 1 },
+            { q: "I think there has been a ______; that's not what I meant.", o: ["misunderstanding", "cooperation", "coworker"], a: 0 },
+            { q: "She felt very ______ after failing the exam.", o: ["unhappy", "unable", "misspelled"], a: 0 },
+            { q: "The high rate of ______ is a major concern for the government.", o: ["unemployment", "misfortune", "cooperation"], a: 0 },
+            { q: "Can you help me ______ this door? I lost the key.", o: ["unlock", "misspell", "coexist"], a: 0 },
+            { q: "The advertisement was designed to ______ customers.", o: ["cooperate", "mislead", "unlock"], a: 1 },
+            { q: "My ______ and I share an office.", o: ["coworker", "misfortune", "misunderstanding"], a: 0 },
+            { q: "It was a great ______ that his flight was cancelled.", o: ["misfortune", "cooperation", "unemployment"], a: 0 },
+            { q: "Different cultures can ______ peacefully in this city.", o: ["misspell", "coexist", "mislead"], a: 1 },
+            { q: "The instructions were ______ and confusing.", o: ["unclear", "cooperative", "misspelled"], a: 0 },
+            { q: "He tried to ______ his shoelaces but the knot was too tight.", o: ["untie", "misspell", "coexist"], a: 0 },
+            { q: "The politician was accused of ______ the public.", o: ["cooperating", "misleading", "unlocking"], a: 1 },
+            { q: "Effective teamwork requires everyone to ______.", o: ["misunderstand", "cooperate", "misspell"], a: 1 },
+            { q: "It's ______ to predict the future with 100% accuracy.", o: ["impossible", "unhappy", "unfortunate"], a: 0 },
+            { q: "He had the ______ of losing his job and his house in the same year.", o: ["cooperation", "misfortune", "unemployment"], a: 1 },
+            { q: "I need to find a new ______ because my current one is leaving.", o: ["coworker", "misunderstanding", "misfortune"], a: 0 },
+            { q: "It is ______ to see so much poverty in a wealthy country.", o: ["unfortunate", "cooperative", "unlocked"], a: 0 },
+            { q: "Please don't ______ my words; I meant to help.", o: ["misunderstand", "cooperate", "unlock"], a: 0 },
+            { q: "The witness gave a ______ account of the event, which confused the police.", o: ["co-signed", "misleading", "unlocked"], a: 1 },
+            { q: "It is ______ for children to play with matches.", o: ["unsafe", "co-safe", "missafe"], a: 0 },
+            { q: "The two authors decided to ______ the book.", o: ["co-author", "misauthor", "unauthor"], a: 0 },
+            { q: "His rude behavior was completely ______.", o: ["unacceptable", "misacceptable", "co-acceptable"], a: 0 },
+            { q: "A simple ______ can ruin a friendship.", o: ["miscalculation", "co-calculation", "un-calculation"], a: 0 },
+            { q: "The new employee is struggling to ______ with the team.", o: ["connect", "misconnect", "unconnect"], a: 0 },
+            { q: "The information you provided has ______ us. We went to the wrong place.", o: ["un-guided", "co-guided", "misguided"], a: 2 },
+            { q: "It is ______ to believe everything you read online.", o: ["unwise", "miswise", "co-wise"], a: 0 },
+            { q: "The ______ of the new policy led to its failure.", o: ["mismanagement", "co-management", "un-management"], a: 0 },
+            { q: "The twins are so different; it's ______ how they can be related.", o: ["unbelievable", "misbelievable", "co-believable"], a: 0 }
+        ]
+    },
+     'prefix-group3': {
+        title: '第三组: pre-, trans-, dis-',
+        intro: '本节探索表示“之前”、“转移”和“否定/分开”的前缀：pre-, trans-, 和 dis-。理解这些前缀有助于您掌握与时间顺序、变化和对立关系相关的词汇。',
+        learn: [
+            { term: 'pre-', definition: '意为“在...之前”(before)。', examples: ['predict (预测)', 'preview (预览)', 'prepare (准备)', 'prehistoric (史前的)'] },
+            { term: 'trans-', definition: '意为“横过、转移”(across, change)。', examples: ['transport (运输)', 'translate (翻译)', 'transform (转变)', 'transaction (交易)'] },
+            { term: 'dis-', definition: '意为“不、无”(not, lack of)，或“分开”(apart)。', examples: ['disagree (不同意)', 'disappear (消失)', 'discover (发现)', 'dishonest (不诚实的)'] }
+        ],
+        practice: [
+            { q: "Can you ______ this document from English to Chinese?", o: ["predict", "translate", "discover"], a: 1 },
+            { q: "I completely ______ with your opinion on this matter.", o: ["disagree", "prepare", "transport"], a: 0 },
+            { q: "The magician made the rabbit ______ from the hat.", o: ["disappear", "predict", "transform"], a: 0 },
+            { q: "You should always ______ for an interview by researching the company.", o: ["prepare", "disagree", "transport"], a: 0 },
+            { q: "Scientists cannot accurately ______ when an earthquake will happen.", o: ["predict", "translate", "discover"], a: 0 },
+            { q: "The caterpillar will ______ into a butterfly.", o: ["transform", "disappear", "disagree"], a: 0 },
+            { q: "Public ______ in this city includes buses and trains.", o: ["transaction", "transport", "preview"], a: 1 },
+            { q: "It is ______ to lie about your qualifications on a resume.", o: ["dishonest", "prehistoric", "transparent"], a: 0 },
+            { q: "Columbus did not ______ America; people were already living there.", o: ["discover", "predict", "translate"], a: 0 },
+            { q: "We got a ______ of the new movie before it was released.", o: ["preview", "transaction", "transport"], a: 0 },
+            { q: "Dinosaurs lived in ______ times.", o: ["prehistoric", "dishonest", "disagreed"], a: 0 },
+            { q: "The bank statement shows every ______ from the last month.", o: ["transaction", "preview", "transport"], a: 0 },
+            { q: "The new manager plans to ______ the company's structure.", o: ["transform", "disappear", "disagree"], a: 0 },
+            { q: "I have a strong ______ for people who are cruel to animals.", o: ["dislike", "preparation", "prediction"], a: 0 },
+            { q: "You need to ______ all the necessary documents before your trip.", o: ["prepare", "disagree", "disappear"], a: 0 },
+            { q: "The witness's story was full of ______, which made the police suspicious.", o: ["dishonesty", "discovery", "discrepancy"], a: 2 },
+            { q: "The invention of the internet has ______ the way we live and work.", o: ["transformed", "disappeared", "disagreed"], a: 0 },
+            { q: "Weather forecasts ______ rain for this weekend.", o: ["predict", "translate", "discover"], a: 0 },
+            { q: "The goods will be ______ by sea.", o: ["transported", "translated", "discovered"], a: 0 },
+            { q: "He was disqualified for his ______ behavior during the game.", o: ["dishonest", "prehistoric", "prepared"], a: 0 },
+            { q: "The patient needs a heart ______.", o: ["transplant", "displant", "preplant"], a: 0 },
+            { q: "He was ______ from the competition for cheating.", o: ["disqualified", "pre-qualified", "trans-qualified"], a: 0 },
+            { q: "We need to take ______ to avoid accidents.", o: ["precautions", "transactions", "dislikes"], a: 0 },
+            { q: "The company will ______ the data from the old server to the new one.", o: ["transfer", "discover", "prepare"], a: 0 },
+            { q: "The child was sent to a ______ for bad behavior.", o: ["preschool", "pre-judge", "pre-test"], a: 0 },
+            { q: "The two friends had a ______ and stopped speaking to each other.", o: ["disagreement", "discovery", "transport"], a: 0 },
+            { q: "The old building was ______ into a modern art gallery.", o: ["transformed", "transported", "translated"], a: 0 },
+            { q: "It is a great ______ to be invited to speak at the conference.", o: ["dishonor", "honor", "pre-honor"], a: 1 },
+            { q: "The movie was an ______ of a famous novel.", o: ["trans-adaptation", "pre-adaptation", "adaptation"], a: 2 },
+            { q: "The patient showed ______ for the doctor's advice.", o: ["disregard", "pre-regard", "trans-regard"], a: 0 }
+        ]
+    },
+    'prefix-group4': {
+        title: '第四组: in-, ex-, inter-',
+        intro: '本节聚焦于表示“方向”和“关系”的前缀：in- (进入/否定)，ex- (向外)，和 inter- (之间)。这些前缀是理解空间、关系和逻辑对立概念的关键。',
+        learn: [
+            { term: 'in- / im- / il- / ir-', definition: '意为“向内、进入”(in, into)，或“不、无”(not)。', examples: ['income (收入)', 'import (进口)', 'inactive (不活跃的)', 'impossible (不可能的)'] },
+            { term: 'ex-', definition: '意为“出、向外”(out, from)。', examples: ['export (出口)', 'exit (出口)', 'exclude (排除)', 'expand (扩张)'] },
+            { term: 'inter-', definition: '意为“在...之间、互相”(between, among)。', examples: ['international (国际的)', 'internet (互联网)', 'interact (互动)', 'interview (面试)'] }
+        ],
+        practice: [
+            { q: "The company plans to ______ its products to Europe.", o: ["import", "export", "inject"], a: 1 },
+            { q: "Good communication is key for effective ______ between team members.", o: ["interaction", "exclusion", "expansion"], a: 0 },
+            { q: "This problem is ______ to solve without more information.", o: ["impossible", "inactive", "internal"], a: 0 },
+            { q: "Please use the emergency ______ in case of a fire.", o: ["exit", "income", "import"], a: 0 },
+            { q: "The new law will have a major ______ on the economy.", o: ["impact", "export", "exit"], a: 0 },
+            { q: "The conference brings together experts from various ______ fields.", o: ["external", "internal", "interconnected"], a: 2 },
+            { q: "He has a high ______ but saves very little money.", o: ["income", "exit", "export"], a: 0 },
+            { q: "The club decided to ______ him for breaking the rules.", o: ["include", "exclude", "interact"], a: 1 },
+            { q: "The ______ of cheap goods from abroad has hurt local businesses.", o: ["import", "export", "exit"], a: 0 },
+            { q: "The universe is constantly ______.", o: ["expanding", "excluding", "importing"], a: 0 },
+            { q: "An ______ flight is a flight between two different countries.", o: ["internal", "international", "external"], a: 1 },
+            { q: "It is ______ to drive without a license.", o: ["illegal", "inactive", "internal"], a: 0 },
+            { q: "The manager will ______ all the candidates tomorrow.", o: ["interview", "interact", "interrupt"], a: 0 },
+            { q: "The volcano has been ______ for many years.", o: ["inactive", "impossible", "illegal"], a: 0 },
+            { q: "Please don't ______ me when I'm speaking.", o: ["interrupt", "interact", "interview"], a: 0 },
+            { q: "The company is facing some ______ problems.", o: ["internal", "external", "international"], a: 0 },
+            { q: "His argument was completely ______, and no one believed him.", o: ["illogical", "inactive", "internal"], a: 0 },
+            { q: "The price includes the flight but ______ accommodation.", o: ["excludes", "includes", "injects"], a: 0 },
+            { q: "The doctor will ______ the medicine into the patient's arm.", o: ["inject", "exit", "export"], a: 0 },
+            { q: "The ______ allows us to access information from all over the world.", o: ["internet", "interview", "interaction"], a: 0 },
+            { q: "The two systems are closely ______.", o: ["interconnected", "excluded", "imported"], a: 0 },
+            { q: "His behavior was ______ and rude.", o: ["impolite", "in-polite", "ex-polite"], a: 0 },
+            { q: "The company is planning a major ______ into the Asian market.", o: ["expansion", "exclusion", "exit"], a: 0 },
+            { q: "The information is for ______ use only.", o: ["internal", "external", "international"], a: 0 },
+            { q: "It's ______ to be angry sometimes.", o: ["in-natural", "ex-natural", "natural"], a: 2 },
+            { q: "The teacher tried to ______ with the quiet student.", o: ["interact", "interrupt", "interview"], a: 0 },
+            { q: "The country's main ______ are oil and gas.", o: ["exports", "imports", "exits"], a: 0 },
+            { q: "His handwriting is almost ______.", o: ["illegible", "in-legible", "ex-legible"], a: 0 },
+            { q: "The job ______ was very challenging.", o: ["interview", "internet", "interaction"], a: 0 },
+            { q: "The decision was ______ and had to be reconsidered.", o: ["irrational", "in-rational", "ex-rational"], a: 0 }
+        ]
+    },
+    'prefix-group5': {
+        title: '第五组: multi-, post-, anti-',
+        intro: '最后一组前缀将学习表示“多”、“之后”和“反对”的 multi-, post-, 和 anti-。这些前缀在科技、社会和医学等领域非常常用，能帮助你理解更专业的词汇。',
+        learn: [
+            { term: 'multi-', definition: '意为“多、多个”(many, much)。', examples: ['multicultural (多元文化的)', 'multimedia (多媒体的)', 'multiply (乘；增加)', 'multitask (多任务)'] },
+            { term: 'post-', definition: '意为“在...之后”(after)。', examples: ['postwar (战后的)', 'postgraduate (研究生的)', 'postpone (推迟)', 'postscript (附言)'] },
+            { term: 'anti-', definition: '意为“反对、抵抗”(against, opposite)。', examples: ['antivirus (杀毒的)', 'antibiotic (抗生素)', 'antisocial (反社会的)', 'antibody (抗体)'] }
+        ],
+        practice: [
+            { q: "The meeting has been ______ until next week.", o: ["postponed", "multiplied", "antisocial"], a: 0 },
+            { q: "You need to install an ______ program to protect your computer.", o: ["antivirus", "multimedia", "postwar"], a: 0 },
+            { q: "She is studying for a ______ degree in law.", o: ["postgraduate", "multicultural", "antibiotic"], a: 0 },
+            { q: "Canada is known for being a ______ society.", o: ["multicultural", "antisocial", "postwar"], a: 0 },
+            { q: "The doctor prescribed some ______ to fight the infection.", o: ["antibodies", "antibiotics", "multimedia"], a: 1 },
+            { q: "He finds it difficult to ______; he can only focus on one thing at a time.", o: ["multitask", "multiply", "postpone"], a: 0 },
+            { q: "The country experienced rapid economic growth in the ______ era.", o: ["postwar", "multicultural", "antivirus"], a: 0 },
+            { q: "His ______ behavior makes it hard for him to make friends.", o: ["antisocial", "multimedia", "postgraduate"], a: 0 },
+            { q: "The presentation used various ______ elements, like video and sound.", o: ["multimedia", "antisocial", "postwar"], a: 0 },
+            { q: "If you ______ 5 by 6, you get 30.", o: ["multiply", "postpone", "multitask"], a: 0 },
+            { q: "The body produces ______ to fight off diseases.", o: ["antibodies", "antibiotics", "antivirus"], a: 0 },
+            { q: "The company is a ______ corporation with offices around the world.", o: ["multinational", "postnatal", "anti-national"], a: 0 },
+            { q: "The government has launched an ______ campaign.", o: ["anti-smoking", "multi-smoking", "post-smoking"], a: 0 },
+            { q: "She added a ______ at the end of her letter.", o: ["postscript", "multitask", "antibody"], a: 0 },
+            { q: "This is a ______ tool with many different functions.", o: ["multipurpose", "anti-purpose", "post-purpose"], a: 0 },
+            { q: "The patient is suffering from ______ depression.", o: ["postnatal", "multinational", "anti-natal"], a: 0 },
+            { q: "The new policy is facing ______ from the public.", o: ["anti-support", "opposition", "post-support"], a: 1 },
+            { q: "The museum has a ______ exhibit on ancient Egypt.", o: ["multimedia", "antisocial", "postwar"], a: 0 },
+            { q: "We need a ______ approach to solve this complex problem.", o: ["multifaceted", "anti-faceted", "post-faceted"], a: 0 },
+            { q: "The use of ______ is essential in modern medicine.", o: ["antibiotics", "antibodies", "antivirus"], a: 0 },
+            { q: "The conference was ______ due to a lack of interest.", o: ["postponed", "multiplied", "multitasked"], a: 0 },
+            { q: "The artist is known for his ______ installations.", o: ["multimedia", "antisocial", "postwar"], a: 1 },
+            { q: "He is pursuing ______ studies at Oxford.", o: ["postgraduate", "multicultural", "antibiotic"], a: 0 },
+            { q: "The number of bacteria can ______ rapidly in warm conditions.", o: ["multiply", "postpone", "multitask"], a: 0 },
+            { q: "The new law is seen as ______ by many civil rights groups.", o: ["anti-democratic", "multi-democratic", "post-democratic"], a: 0 },
+            { q: "The ______ period was a time of great change.", o: ["postwar", "multicultural", "antivirus"], a: 0 },
+            { q: "The company offers ______ benefits to its employees.", o: ["multiple", "anti-", "post-"], a: 0 },
+            { q: "She is known for her ability to ______.", o: ["multitask", "multiply", "postpone"], a: 0 },
+            { q: "The vaccine helps the body create ______.", o: ["antibodies", "antibiotics", "antivirus"], a: 0 },
+            { q: "The city is a vibrant, ______ hub.", o: ["multicultural", "antisocial", "postwar"], a: 0 }
+        ]
+    },
+    'suffix-group': {
+        title: '核心后缀: 形容词 & 名词',
+        intro: '后缀通常决定一个单词的词性。本节将学习几组最常见的形容词和名词后缀，掌握它们能让你更准确地使用词汇并理解句子结构。',
+        learn: [
+            { term: '-able / -ible', definition: '【形容词】表示“能够...的、可以...的”。', examples: ['readable (可读的)', 'comfortable (舒适的)', 'valuable (有价值的)'] },
+            { term: '-al', definition: '【形容词】表示“与...有关的”。', examples: ['national (国家的)', 'personal (个人的)', 'natural (自然的)'] },
+            { term: '-less', definition: '【形容词】表示“没有...的”。', examples: ['homeless (无家可归的)', 'useless (无用的)', 'endless (无尽的)'] },
+            { term: '-ful', definition: '【形容词】表示“充满...的”。', examples: ['beautiful (美丽的)', 'careful (小心的)', 'successful (成功的)'] },
+            { term: '-tive', definition: '【形容词】表示“有...倾向的”。', examples: ['active (活跃的)', 'creative (有创造力的)', 'effective (有效的)'] },
+            { term: '-tion / -sion', definition: '【名词】表示“动作、过程、状态”。', examples: ['action (行动)', 'information (信息)', 'education (教育)'] },
+            { term: '-ness', definition: '【名词】表示“性质、状态”。', examples: ['happiness (幸福)', 'kindness (善良)', 'darkness (黑暗)'] }
+        ],
+        practice: [
+            { q: "This book is not very ______. (read)", o: ["readable", "reading", "readful"], a: 0 },
+            { q: "The government is developing a new ______ anthem. (nation)", o: ["nationful", "national", "nationless"], a: 1 },
+            { q: "He felt ______ after losing his job. (hope)", o: ["hopeful", "hopeless", "hopeness"], a: 1 },
+            { q: "She is a very ______ person. (create)", o: ["creation", "creative", "creativeless"], a: 1 },
+            { q: "The ______ of the new policy was immediate. (effect)", o: ["effective", "effectness", "effect"], a: 2 },
+            { q: "______ is more important than money. (happy)", o: ["happiness", "happyful", "happiable"], a: 0 },
+            { q: "This sofa is very ______. (comfort)", o: ["comfortless", "comfortable", "comfortion"], a: 1 },
+            { q: "It's a ______ day for a picnic. (beauty)", o: ["beautiful", "beautyless", "beautiness"], a: 0 },
+            { q: "He made a quick ______ to leave. (decide)", o: ["decisive", "decision", "decideless"], a: 1 },
+            { q: "The problem was his ______ to follow instructions. (able)", o: ["ableness", "ability", "inability"], a: 2 },
+            { q: "Be ______ when you cross the street. (care)", o: ["careful", "careless", "careness"], a: 0 },
+            { q: "This tool is completely ______; it doesn't work. (use)", o: ["useful", "useless", "usetive"], a: 1 },
+            { q: "We need more ______ about the incident. (inform)", o: ["informative", "information", "informness"], a: 1 },
+            { q: "The ______ of the night was broken by a scream. (dark)", o: ["darkful", "darkable", "darkness"], a: 2 },
+            { q: "He is a very ______ member of the team. (act)", o: ["action", "active", "actness"], a: 1 },
+            { q: "The story seemed ______, going on and on. (end)", o: ["endful", "endless", "ending"], a: 1 },
+            { q: "Good ______ is the key to a country's development. (educate)", o: ["education", "educative", "educated"], a: 0 },
+            { q: "Thank you for your ______. (kind)", o: ["kindness", "kindful", "kindal"], a: 0 },
+            { q: "This is a ______ matter, please don't share it. (person)", o: ["personal", "personable", "personness"], a: 0 },
+            { q: "A ______ career requires hard work. (success)", o: ["successful", "succession", "successness"], a: 0 },
+            { q: "The new medicine is highly ______. (effect)", o: ["effective", "effectful", "affection"], a: 0 },
+            { q: "Her ______ for the job was obvious. (suitable)", o: ["suitability", "suitableness", "suitable"], a: 0 },
+            { q: "The king's ______ lasted for fifty years. (reign)", o: ["reign", "reignful", "reignness"], a: 0 },
+            { q: "The ______ between the two countries is friendly. (relate)", o: ["relative", "relation", "relational"], a: 1 },
+            { q: "He is known for his ______. (honest)", o: ["honesty", "honestful", "honestness"], a: 0 },
+            { q: "The ______ of the new product was a huge success. (promote)", o: ["promotion", "promotive", "promotable"], a: 0 },
+            { q: "She has a very ______ personality. (attract)", o: ["attraction", "attractive", "attractness"], a: 1 },
+            { q: "The ______ of this machine is amazing. (power)", o: ["powerful", "powerless", "powerness"], a: 0 },
+            { q: "He was filled with ______ when he saw his son graduate. (proud)", o: ["pride", "proudness", "proudful"], a: 0 },
+            { q: "The ______ was caused by a mechanical failure. (explode)", o: ["explosion", "explosive", "explodable"], a: 0 }
+        ]
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const contentArea = document.getElementById('content-area');
+    const navMenu = document.getElementById('nav-menu');
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menu-toggle');
+
+    let currentSection = '';
+    let currentQuiz = null;
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let questions = [];
+
+    const renderContent = (sectionId) => {
+        if (!data[sectionId]) return;
+        
+        currentSection = sectionId;
+        const sectionData = data[sectionId];
+        
+        // Update active link
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${sectionId}`) {
+                link.classList.add('active');
+            }
+        });
+
+        // Generate HTML
+        contentArea.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">${sectionData.title}</h2>
+                <p class="text-slate-600 mb-6">${sectionData.intro}</p>
+                <div class="border-b border-slate-200 mb-6">
+                    <nav class="-mb-px flex space-x-6">
+                        <button data-view="learn" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-teal-600 hover:border-teal-500 whitespace-nowrap active">学习</button>
+                        <button data-view="practice" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-teal-600 hover:border-teal-500 whitespace-nowrap">练习</button>
+                    </nav>
+                </div>
+                <div id="view-content"></div>
+            </div>
+        `;
+        renderView('learn');
+    };
+
+    const renderView = (view) => {
+        const viewContent = document.getElementById('view-content');
+        const sectionData = data[currentSection];
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.tab-btn[data-view="${view}"]`).classList.add('active');
+        
+        if (view === 'learn') {
+            viewContent.innerHTML = sectionData.learn.map(item => `
+                <div class="mb-6 p-4 border border-slate-200 rounded-lg bg-slate-50">
+                    <h3 class="text-xl font-semibold text-teal-700">${item.term}</h3>
+                    <p class="text-slate-700 mt-1 mb-2">${item.definition}</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${item.examples.map(ex => `<span class="bg-teal-100 text-teal-800 text-sm font-medium px-2.5 py-0.5 rounded-full">${ex}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        } else if (view === 'practice') {
+            startQuiz();
+        }
+    };
+    
+    const startQuiz = () => {
+        currentQuiz = data[currentSection].practice;
+        currentQuestionIndex = 0;
+        score = 0;
+        questions = [...currentQuiz]; // Create a mutable copy
+        renderQuestion();
+    };
+
+    const renderQuestion = () => {
+        const viewContent = document.getElementById('view-content');
+        if (currentQuestionIndex >= questions.length) {
+            renderResults();
+            return;
+        }
+        
+        const questionData = questions[currentQuestionIndex];
+        viewContent.innerHTML = `
+            <div id="quiz-container">
+                <div class="mb-4">
+                    <p class="text-slate-500 text-sm">题目 ${currentQuestionIndex + 1} / ${questions.length}</p>
+                    <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                        <div class="bg-teal-500 h-2.5 rounded-full" style="width: ${((currentQuestionIndex + 1) / questions.length) * 100}%"></div>
+                    </div>
+                </div>
+                <p class="text-xl text-slate-800 font-medium mb-6">${questionData.q.replace(/______/g, '<span class="font-bold text-teal-600">______</span>')}</p>
+                <div id="quiz-options" class="grid grid-cols-1 gap-3">
+                    ${questionData.o.map((option, index) => `
+                        <button data-index="${index}" class="quiz-option-btn w-full text-left p-4 rounded-lg bg-white shadow-sm">
+                            <span class="font-bold mr-2">${String.fromCharCode(65 + index)}.</span> ${option}
+                        </button>
+                    `).join('')}
+                </div>
+                <div id="quiz-feedback" class="mt-6"></div>
+            </div>
+        `;
+    };
+
+    const handleAnswer = (selectedIndex) => {
+        const questionData = questions[currentQuestionIndex];
+        const options = document.querySelectorAll('.quiz-option-btn');
+        const feedback = document.getElementById('quiz-feedback');
+        const selectedBtn = options[selectedIndex];
+        const correctIndex = questionData.a;
+
+        if (selectedIndex === correctIndex) {
+            score++;
+            // Disable all options and remove any previous 'incorrect' styles
+            options.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('incorrect');
+            });
+            // Mark the correct one
+            selectedBtn.classList.add('correct');
+
+            // Provide feedback and the next button
+            feedback.innerHTML = `
+                <div class="text-center p-3 bg-green-100 text-green-700 rounded-lg mb-4">
+                    回答正确！
+                </div>
+                <button id="next-btn" class="w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition-colors">
+                    ${currentQuestionIndex === questions.length - 1 ? '查看结果' : '下一题'}
+                </button>
+            `;
+        } else {
+            // Incorrect answer
+            selectedBtn.classList.add('incorrect');
+            selectedBtn.disabled = true; // Disable only the wrong option
+            feedback.innerHTML = `
+                <div class="text-center p-3 bg-red-100 text-red-700 rounded-lg">
+                    回答错误，请再试一次！
+                </div>
+            `;
+        }
+    };
+
+    const renderResults = () => {
+        const viewContent = document.getElementById('view-content');
+        const percentage = Math.round((score / questions.length) * 100);
+        let message = '';
+        if (percentage === 100) message = '太棒了！完全正确！';
+        else if (percentage >= 80) message = '非常不错！继续努力！';
+        else if (percentage >= 60) message = '做得很好，再接再厉！';
+        else message = '别灰心，多练习几次！';
+
+        viewContent.innerHTML = `
+            <div class="text-center bg-white p-8 rounded-lg shadow-md">
+                <h3 class="text-2xl font-bold mb-2">练习完成!</h3>
+                <p class="text-slate-600 mb-6">${message}</p>
+                <div class="text-5xl font-bold text-teal-600 mb-2">${score} / ${questions.length}</div>
+                <p class="text-xl font-medium text-slate-700 mb-8">正确率: ${percentage}%</p>
+                <button id="retry-btn" class="w-full max-w-xs mx-auto bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition-colors">
+                    重新练习
+                </button>
+            </div>
+        `;
+    };
+
+    // Event Delegation
+    contentArea.addEventListener('click', (e) => {
+        const tabBtn = e.target.closest('.tab-btn');
+        if (tabBtn) {
+            renderView(tabBtn.dataset.view);
+            return;
+        }
+
+        const optionBtn = e.target.closest('.quiz-option-btn');
+        if (optionBtn && !optionBtn.disabled) {
+            handleAnswer(parseInt(optionBtn.dataset.index));
+            return;
+        }
+
+        if (e.target.id === 'next-btn') {
+            currentQuestionIndex++;
+            renderQuestion();
+            return;
+        }
+
+        if (e.target.id === 'retry-btn') {
+            startQuiz();
+            return;
+        }
+    });
+    
+    navMenu.addEventListener('click', (e) => {
+        e.preventDefault();
+        const link = e.target.closest('.sidebar-link');
+        if (link) {
+            const sectionId = link.getAttribute('href').substring(1);
+            renderContent(sectionId);
+            if (window.innerWidth < 1024) {
+                 sidebar.classList.add('-translate-x-full');
+            }
+        }
+    });
+    
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+    });
+
+    // Initial load
+    const initialSection = window.location.hash.substring(1) || 'prefix-group1';
+    renderContent(initialSection);
+});
+</script>
+
+</body>
+</html>
